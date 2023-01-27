@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -31,9 +32,47 @@ func main() {
         panic(err)
     }
 
-    h := cyoa.NewHandler(story)
+    //This line on uncommenting will handle CYOA on path prefixed with /story
+    // tmpl := template.Must(template.New("").Parse(withPrefixPathTemplate))
+    //h := cyoa.NewHandler(story, cyoa.WithTemplate(tmpl), cyoa.WithPathFunc(pathFn))
+    
+    h := cyoa.NewHandler(story, cyoa.WithTemplate(nil))
 
     fmt.Printf("starting server on the port %d\n", *port)
 
     log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", *port), h))
+}
+
+var withPrefixPathTemplate = `
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Chooose your Own Adventure</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link href="css/style.css" rel="stylesheet">
+    </head>
+    <body>
+
+        <h1>{{.Title}}</h1>
+        {{range .Paragraphs}}
+        <p>{{.}}</p>
+        {{end}}
+
+        <ul>
+            {{range .Options}}
+            <li><a href="/story/{{.Chapter}}">{{.Text}}</a></li>
+            {{end}}
+        </ul>
+    </body>
+</html>`
+
+//Just to try out Functional Options Design Pattern
+func pathFn(r *http.Request) string {
+    path := strings.TrimSpace(r.URL.Path)
+
+    if path == "/story" || path == "/story/" {
+        path = "/story/intro"
+    }
+    return path[len("/story/"):] 
 }
